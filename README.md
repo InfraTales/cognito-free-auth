@@ -4,6 +4,10 @@ Sign-in for up to 10,000 monthly active users at $0, with Amazon Cognito on the 
 
 This is the code for the InfraTales article "Sign-in for 10,000 users at $0 with Amazon Cognito" on AWS Builder Center.
 
+## Architecture
+
+![Cognito sign-in, tokens, and JWT checks in a Lambda function URL](docs/architecture.png)
+
 ## What you get
 
 | Piece | What it does |
