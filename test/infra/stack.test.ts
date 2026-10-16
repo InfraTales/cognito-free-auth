@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { AuthStack, BUNDLE_DIR } from '../../infra/lib/auth-stack';
+import { AuthStack, BUNDLE_DIR, RESERVED_CONCURRENCY } from '../../infra/lib/auth-stack';
 
 const env = { account: '123456789012', region: 'us-east-1' };
 const props = { env, domainPrefix: 'notes-test', appUrls: ['https://app.example.com/callback', 'http://localhost:5173/'] };
@@ -128,6 +128,13 @@ describe('API', () => {
     });
   });
 
+  test('caps parallel copies, so junk tokens on the public URL cannot run up an unbounded bill', () => {
+    // The URL is public, so the cap is the only bound on billed invocations. The function URL
+    // also limits the request rate to 10 times this number.
+    expect(RESERVED_CONCURRENCY).toBe(2);
+    template.hasResourceProperties('AWS::Lambda::Function', { Handler: 'index.handler', ReservedConcurrentExecutions: 2 });
+  });
+
   test('has a public function URL with CORS limited to the app origins', () => {
     expect(only('AWS::Lambda::Url')).toMatchObject({
       AuthType: 'NONE',
@@ -160,7 +167,7 @@ describe('API', () => {
   });
 });
 
-test('the notes table stays inside the DynamoDB always-free capacity and survives a stack delete', () => {
+test('the notes table stays inside the DynamoDB always-free capacity, adds no paid backup, and survives a stack delete', () => {
   template.hasResource('AWS::DynamoDB::Table', {
     Properties: Match.objectLike({
       KeySchema: [
@@ -168,7 +175,8 @@ test('the notes table stays inside the DynamoDB always-free capacity and survive
         { AttributeName: 'sk', KeyType: 'RANGE' },
       ],
       ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
-      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true },
+      // Off: point-in-time recovery has no free tier.
+      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: false },
       DeletionProtectionEnabled: true,
     }),
     DeletionPolicy: 'Retain',

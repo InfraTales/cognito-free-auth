@@ -20,6 +20,14 @@ export const TOKEN_LIFETIMES = {
   rotationGrace: cdk.Duration.seconds(10),
 };
 
+/**
+ * The most copies of the API function that may run at once. The function URL is public, so
+ * anyone can send it junk tokens, and each one is a billed Lambda request. Reserved
+ * concurrency caps that: Lambda answers HTTP 429 past 2 copies, and a function URL also
+ * limits the request rate to 10 times the reserved concurrency, here 20 a second.
+ */
+export const RESERVED_CONCURRENCY = 2;
+
 export interface AuthStackProps extends cdk.StackProps {
   /** Managed login prefix: https://<prefix>.auth.<region>.amazoncognito.com. Must be unique in the Region. */
   domainPrefix: string;
@@ -114,7 +122,9 @@ export class AuthStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 5,
       writeCapacity: 5,
-      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      // Point-in-time recovery bills per GB-month with no free tier, so it stays off to keep
+      // the stack at $0. Turn it on before the notes matter to anyone.
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: false },
       deletionProtection: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -141,6 +151,7 @@ export class AuthStack extends cdk.Stack {
       code: lambda.Code.fromAsset(BUNDLE_DIR),
       memorySize: 256,
       timeout: cdk.Duration.seconds(5),
+      reservedConcurrentExecutions: RESERVED_CONCURRENCY,
       role,
       logGroup,
       environment: {
@@ -168,10 +179,15 @@ export class AuthStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ManagedLoginUrl', { value: domain.baseUrl() });
     new cdk.CfnOutput(this, 'NotesTableName', { value: table.tableName });
 
-    this.acknowledgeFindings(userPool);
+    this.acknowledgeFindings(userPool, table);
   }
 
-  private acknowledgeFindings(userPool: cognito.UserPool) {
+  private acknowledgeFindings(userPool: cognito.UserPool, table: dynamodb.Table) {
+    cdk.Validations.of(table).acknowledge({
+      id: 'AwsSolutions-DDB3',
+      reason:
+        'Point-in-time recovery has no free tier, and this stack is built to cost $0. Deletion protection and a retain policy guard the table; turn recovery on before the data matters.',
+    });
     cdk.Validations.of(userPool).acknowledge({
       id: 'AwsSolutions-COG8',
       reason:

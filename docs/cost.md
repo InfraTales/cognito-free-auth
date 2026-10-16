@@ -25,7 +25,7 @@ A user counts as an MAU in a calendar month if anything identity-related happens
 | SMS for MFA, sign-up or recovery | Billed by Amazon SNS or AWS End User Messaging SMS | Off |
 | Your own email through Amazon SES | SES email prices | Off until you switch |
 | Machine-to-machine tokens (client credentials) | $0.00225 per token request, no free tier | Not used |
-| DynamoDB point-in-time recovery | $0.20 per GB-month | On. A few MB of notes cost a fraction of a cent |
+| DynamoDB point-in-time recovery | Per GB-month, no free tier | Off, to keep the stack at $0. Turn it on before the notes matter |
 
 ## Essentials or Lite past 10,000 users
 
