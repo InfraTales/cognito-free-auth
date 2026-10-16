@@ -28,12 +28,12 @@ A revoked token still passes. Cognito's own guide says offline signature and exp
 - **No SMS.** SMS MFA, SMS sign-in and phone recovery are off. That removes SMS pumping fraud and the SMS bill in one move.
 - **Password policy:** 12 characters or more, all four character types, and no reuse of the last 5 passwords.
 - **Prevent user existence errors is on.** The Cognito API leaves it off by default for new app clients.
-- **Refresh token rotation is on**, with a 10-second grace period. Each refresh returns a new refresh token, and a stolen old one stops working soon after.
+- **Refresh token rotation is on**, with a 10-second grace period (Cognito allows up to 60). Each refresh returns a new refresh token, and a stolen old one stops working soon after.
 - **Deletion protection is on** for the user pool and the table.
 
 ## Things to know before launch
 
 - **Self sign-up is open.** Every sign-up counts as a monthly active user, confirmed or not. A bot that signs up thousands of fake accounts can push you past the free 10,000. If that worries you, add a pre sign-up Lambda trigger that only allows your users' email domains, or turn off self sign-up and create users yourself.
-- **The function URL is public.** The function refuses requests with bad tokens, but each one still counts as a Lambda request. Lambda's free allowance is 1 million requests a month.
+- **The function URL is public.** The function refuses requests with bad tokens, but each one still counts as a Lambda request. Lambda's free allowance is 1 million requests a month. Reserved concurrency of 2 caps the damage: at most 2 copies run at once, the URL accepts at most 20 requests a second, and everything above that gets HTTP 429 without running the function.
 - **The default email sender stops at 50 messages a day** per account. Verification codes beyond that don't arrive. Move to Amazon SES before real users sign up.
 - **Threat protection** (adaptive authentication and compromised-credential checks) needs the Plus plan, which has no free tier. This stack doesn't use it, and the cdk-nag acknowledgement for rule COG8 says so.

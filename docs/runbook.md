@@ -11,6 +11,8 @@ npm run smoke
 
 The prefix can't contain `aws`, `amazon` or `cognito`. If the deploy fails on the domain, another account in the Region already has that prefix, so choose a different one.
 
+If the deploy fails on reserved concurrency, your account's Lambda concurrency quota is too low. Lambda keeps 100 units unreserved, and new accounts start with a lower quota. Check "Concurrent executions" for AWS Lambda in Service Quotas and request an increase. Don't remove the reservation to get past it: it's what caps the bill from junk requests to the public URL.
+
 ## A user says the API returns 401
 
 1. Look in the function's log group for `token rejected`. The `reason` field names the check that failed.
@@ -22,7 +24,7 @@ The prefix can't contain `aws`, `amazon` or `cognito`. If the deploy fails on th
 
 ## Refresh tokens stop working
 
-Refresh token rotation is on. Each refresh returns a new refresh token, and the old one works for only 10 more seconds. The app must store the new one every time. Rotation needs the `GetTokensFromRefreshToken` operation; the older `REFRESH_TOKEN_AUTH` flow doesn't work with it.
+Refresh token rotation is on. Each refresh returns a new refresh token, and the old one works for only 10 more seconds, the grace period this stack sets (Cognito allows up to 60). The app must store the new one every time. Refresh with the `GetTokensFromRefreshToken` operation or the token endpoint's `refresh_token` grant; the older `REFRESH_TOKEN_AUTH` flow doesn't work with rotation.
 
 ## Verification emails don't arrive
 

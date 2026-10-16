@@ -15,7 +15,7 @@ This is the code for the InfraTales article "Sign-in for 10,000 users at $0 with
 | Cognito user pool, Essentials plan | Email sign-up, managed login, passkeys, TOTP MFA required, no SMS anywhere |
 | App client | Public client with no secret. Code grant with PKCE for managed login, `USER_AUTH` and SRP for SDK sign-in |
 | Tokens | 15-minute access and ID tokens, 30-day refresh tokens with rotation, revocation on |
-| Lambda function URL | Node.js 24 on arm64. Verifies access tokens with `aws-jwt-verify`, caches the signing keys, returns only the caller's notes |
+| Lambda function URL | Node.js 24 on arm64, capped at 2 parallel copies. Verifies access tokens with `aws-jwt-verify`, caches the signing keys, returns only the caller's notes |
 | DynamoDB table | Notes keyed by the token's `sub`. Provisioned at 5 read and 5 write units, inside the always-free 25 and 25 |
 
 ## Try it without an AWS account
